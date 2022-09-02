@@ -1,4 +1,14 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { config } from './config/.config';
+import { HttpService } from '@nestjs/axios';
+import * as fs from 'fs';
+import { firstValueFrom } from 'rxjs';
 
 const samplePayload = {
   message_type: 'success',
@@ -53,12 +63,78 @@ const sampleError = {
 };
 @Injectable()
 export class AppService {
-  getClient(body: { facility: string; id: string }) {
-    if (body.id === '152010221845') {
-      return samplePayload;
-    } else {
-      throw new ConflictException(sampleError);
+  constructor(private http: HttpService) {}
+  async getClient(body: { facility: string; id: string }, authHeader: string) {
+    const url = config.openimis_test_url;
+    try {
+      const token = await this.getToken(authHeader);
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await firstValueFrom(
+        this.http.get(`${url}/insuree/${body.id}/enquire`, { headers }),
+      );
+      return this.getResponseBody(response.data, body.id);
+    } catch (e) {
+      if (e?.response) {
+        if (e?.response?.status == 401) {
+          throw new UnauthorizedException();
+        } else if (e?.response?.status == 404) {
+          throw new NotFoundException({
+            message_type: 'failure',
+            sent_id: body.id,
+            error_message:
+              'The sent ID is not a valid OpenIMIS ID, please correct it.',
+          });
+        } else {
+          throw new InternalServerErrorException();
+        }
+      }
     }
-    // return body;
+  }
+
+  getResponseBody(data: any, id: string) {
+    const insurance_details = data['details'];
+    const otherDetails = { ...data };
+    delete otherDetails['details'];
+    return {
+      message_type: 'success',
+      sent_id: id,
+      insurance_details,
+      ...otherDetails,
+    };
+  }
+
+  async getToken(authHeader: string) {
+    try {
+      let token = '';
+      const url = config.openimis_test_url;
+      const authToken = authHeader.substring('Basic '.length).trim();
+      const decoded = Buffer.from(authToken, 'base64').toString();
+      const credentials = decoded.split(':');
+      const username = credentials[0];
+      const password = credentials[1];
+      const loginPayload = {
+        username,
+        password,
+      };
+      const tokenCredentialsRaw = fs.readFileSync('credentials.json');
+      if (tokenCredentialsRaw) {
+        const tokenCredentials = JSON.parse(tokenCredentialsRaw.toString());
+        const today = new Date();
+        const expiredDate = new Date(tokenCredentials['expires_on']);
+        if (tokenCredentials['access_token'] && today < expiredDate) {
+          token = tokenCredentials['access_token'];
+        } else {
+          const response = await firstValueFrom(
+            this.http.post(`${url}/login`, loginPayload),
+          );
+          const loginAccess = response.data;
+          token = loginAccess['access_token'];
+          fs.writeFileSync('credentials.json', JSON.stringify(loginAccess));
+        }
+      }
+      return token;
+    } catch (e) {
+      throw e;
+    }
   }
 }

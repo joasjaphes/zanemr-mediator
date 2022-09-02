@@ -35,4 +35,5 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # config
-/config/*.config.ts
+/src/config/*.config.ts
+credentials.json

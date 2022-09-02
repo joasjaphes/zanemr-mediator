@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { registerMediator } from 'openhim-mediator-utils';
 import { mediatorConf } from './mdiator-config';
+import * as fs from 'fs';
 // import  {} from
 
 // Express Server Code
@@ -23,6 +24,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   await app.listen(3000);
+  fs.writeFileSync(
+    'credentials.json',
+    JSON.stringify({ access_token: null, expires_on: null }),
+  );
   console.log('Listening on port', 3000);
 }
 bootstrap();
