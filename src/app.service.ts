@@ -54,7 +54,6 @@ const sampleError = {
 @Injectable()
 export class AppService {
   getClient(body: { facility: string; id: string }) {
-    console.log('body', body);
     if (body.id === '152010221845') {
       return samplePayload;
     } else {
