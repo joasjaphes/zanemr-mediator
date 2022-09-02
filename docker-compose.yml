@@ -1,0 +1,11 @@
+version: '3.3'
+
+services:
+  zanemr-mediator:
+    container_name: zanemr-mediator
+    build: 
+      context: .
+    image: joasjaphes/zanemr-mediator:latest
+    restart: always
+    ports:
+      - '8088:3000'

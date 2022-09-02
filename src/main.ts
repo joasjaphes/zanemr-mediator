@@ -6,21 +6,22 @@ import { mediatorConf } from './mdiator-config';
 
 // Express Server Code
 
-const openhimConfig = {
-  username: 'admin@monitafrica.com',
-  password: 'Admin@2022',
-  apiURL: 'http://zhil-core:8080',
-  trustSelfSigned: true,
-};
+// const openhimConfig = {
+//   username: 'root@openhim.org',
+//   password: 'Admin@2022',
+//   apiURL: 'http://localhost:8080',
+//   trustSelfSigned: true,
+// };
 
-registerMediator(openhimConfig, mediatorConf, (err) => {
-  if (err) {
-    throw new Error(`Failed to register mediator. Check your Config. ${err}`);
-  }
-});
+// registerMediator(openhimConfig, mediatorConf, (err) => {
+//   if (err) {
+//     throw new Error(`Failed to register mediator. Check your Config. ${err}`);
+//   }
+// });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
   await app.listen(3000);
 }
 bootstrap();

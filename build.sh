@@ -1,0 +1,1 @@
+npm run build && docker build -t joasjaphes/zanemr-mediator .
